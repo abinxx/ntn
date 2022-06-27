@@ -7,13 +7,21 @@ import (
 	"os"
 )
 
-const (
-	remoteAddr = "120.79.182.242:9188"
-	localAddr  = "192.168.2.100:80"
-)
+type Config struct {
+	Server string
+	Token  string
+	Serves []common.Serve
+}
+
+var appConfig Config
 
 func handleForwardConn(data common.JSON) {
-	remoteConn, _ := net.Dial("tcp", remoteAddr)
+	remoteConn, err := net.Dial("tcp", appConfig.Server)
+
+	if err != nil {
+		remoteConn.Close()
+		return
+	}
 
 	httpMsg := common.NewMessage(common.REQCONN, common.JSON{
 		"key": data["key"],
@@ -21,17 +29,26 @@ func handleForwardConn(data common.JSON) {
 
 	httpMsg.Send(remoteConn)
 
-	localConn, _ := net.Dial("tcp", localAddr)
+	localConn, err := net.Dial("tcp", "192.168.2.100:80")
 
-	common.Copy(remoteConn, localConn)
+	if err != nil {
+		println(err.Error())
+		common.SendHttpRes(remoteConn, "Local serve connection error.")
+		return
+	}
+
+	common.Forward(remoteConn, localConn)
 }
 
 func login(conn net.Conn) {
-
-	connectMsg := common.NewMessage(common.LOGIN, common.JSON{
-		"token":  "aaaaaaaaaaaaaaa",
-		"domain": "home.nsp.bincs.cn",
-	})
+	connectMsg := common.Message{
+		Type: common.LOGIN,
+		Data: common.JSON{
+			"token":   appConfig.Token,
+			"version": common.Version,
+		},
+		Serves: appConfig.Serves,
+	}
 
 	connectMsg.Send(conn)
 
@@ -55,14 +72,15 @@ func serve(conn net.Conn) {
 		case common.HASREQ:
 			go handleForwardConn(msg.Data)
 		case common.FATAL:
-			fmt.Println(msg)
+			fmt.Println(msg.Data["msg"])
 			os.Exit(1)
 		}
 	}
 }
 
 func main() {
-	conn, err := net.Dial("tcp", remoteAddr)
+	common.GetConfig(&appConfig)
+	conn, err := net.Dial("tcp", appConfig.Server)
 
 	if err != nil {
 		println("连接服务器失败", err.Error())

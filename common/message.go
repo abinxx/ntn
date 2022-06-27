@@ -10,8 +10,9 @@ import (
 type JSON map[string]string
 
 type Message struct {
-	Type uint
-	Data JSON
+	Type   uint    `json:"type"`
+	Data   JSON    `json:"data"`
+	Serves []Serve `json:"serves,omitempty"`
 }
 
 func (msg *Message) Send(conn net.Conn) (err error) {

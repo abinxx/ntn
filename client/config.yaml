@@ -1,0 +1,21 @@
+#服务器地址
+#server: 120.79.182.242:9188
+server: 127.0.0.1:9188
+
+#登录令牌
+token: ac16alad5a1dk3afysge
+
+#服务列表
+serves:
+    -
+        addr: 127.0.0.1:80
+        type: http
+        domain: localhost
+    -
+        addr: 127.0.0.1:443
+        type: https
+        domain: https.nsp.bincs.cn
+    -
+        addr: 127.0.0.1:22
+        type: tunnel
+        domain: ssh.nsp.bincs.cn
