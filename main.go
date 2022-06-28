@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"io"
+	"log"
 	"net"
 	"ntn/common"
 	"strings"
@@ -37,7 +38,7 @@ func getHTTPHeaders(conn net.Conn) (host string) {
 
 		if line == "\r\n" || err == io.EOF {
 			data, _ := buf.Peek(buf.Buffered())
-			headers += string(data) //追究POST数据
+			headers += string(data) //追加POST数据
 			break
 		}
 	}
@@ -78,8 +79,8 @@ func handleForwardConn(conn net.Conn, data common.JSON) {
 }
 
 func handleClientConn(conn net.Conn) {
-	connectMsg := new(common.Message)
-	err := connectMsg.Read(conn)
+	clientMsg := new(common.Message)
+	err := clientMsg.Read(conn)
 
 	if err != nil {
 		defer conn.Close()
@@ -91,11 +92,11 @@ func handleClientConn(conn net.Conn) {
 		return
 	}
 
-	switch connectMsg.Type {
+	switch clientMsg.Type {
 	case common.LOGIN:
-		login(conn, connectMsg)
+		login(conn, clientMsg)
 	case common.REQCONN:
-		handleForwardConn(conn, connectMsg.Data)
+		handleForwardConn(conn, clientMsg.Data)
 	}
 }
 
@@ -171,11 +172,11 @@ func Serve(id, addr string, f func(c net.Conn)) {
 	ln, err := net.Listen("tcp", addr)
 
 	if err != nil {
-		println("服务启动失败", err)
+		log.Fatal("服务启动失败", err)
 		return
 	}
 
-	println(id + "服务运行中")
+	log.Println(id + "服务运行中")
 	for {
 		conn, err := ln.Accept()
 		if err != nil {

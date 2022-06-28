@@ -1,8 +1,8 @@
 package common
 
 import (
-	"fmt"
 	"io"
+	"log"
 	"net"
 )
 
@@ -27,14 +27,14 @@ func Forward(dst net.Conn, src net.Conn) {
 
 		n, err := io.Copy(dst, src)
 		if err != nil {
-			println(err.Error())
+			log.Println(err.Error())
 		}
-		fmt.Printf("Upload: %d Byte\n", n)
+		log.Printf("Upload: %d Byte\n", n)
 	}()
 
 	n, err := io.Copy(src, dst)
 	if err != nil {
-		println(err.Error())
+		log.Println(err.Error())
 	}
-	fmt.Printf("Dodwload: %d Byte\n", n)
+	log.Printf("Dodwload: %d Byte\n", n)
 }

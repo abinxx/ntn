@@ -3,7 +3,7 @@ package common
 import (
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net"
 )
 
@@ -17,10 +17,10 @@ type Message struct {
 
 func (msg *Message) Send(conn net.Conn) (err error) {
 	msgBytes, err := json.Marshal(&msg)
-	println("SEND DATA:", string(msgBytes))
+	log.Println("Send Msg:", string(msgBytes))
 
 	dataLen := uint16(len(msgBytes))
-	fmt.Printf("SEND DATA LEN: %d Byte\n", dataLen)
+	log.Printf("Send Msg Len: %d Byte\n", dataLen)
 
 	lenBytes := make([]byte, 2)
 	binary.BigEndian.PutUint16(lenBytes, dataLen) //将长度转大端字节
@@ -41,12 +41,12 @@ func (msg *Message) Read(conn net.Conn) (err error) {
 	}
 
 	dataLen := uint16(binary.BigEndian.Uint16(buf)) //解析消息长度
-	fmt.Printf("READ DATA LEN: %d Byte\n", dataLen)
+	log.Printf("Read Msg Len: %d Byte\n", dataLen)
 
 	msgBtyes := make([]byte, dataLen)
 	_, err = conn.Read(msgBtyes) //读取消息
 
-	println("READ DATA:", string(msgBtyes))
+	log.Println("Read Msg:", string(msgBtyes))
 	err = json.Unmarshal(msgBtyes, &msg)
 	return
 }

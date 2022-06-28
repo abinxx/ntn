@@ -1,10 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net"
 	"ntn/common"
-	"os"
 )
 
 type Config struct {
@@ -32,7 +31,7 @@ func handleForwardConn(data common.JSON) {
 	localConn, err := net.Dial("tcp", data["addr"])
 
 	if err != nil {
-		println(err.Error())
+		log.Println(err.Error())
 		common.SendHttpRes(remoteConn, "Local serve connection error.")
 		return
 	}
@@ -62,18 +61,17 @@ func serve(conn net.Conn) {
 		msg := new(common.Message)
 		err := msg.Read(conn)
 		if err != nil {
-			println("服务器已断开连接", err.Error())
+			log.Println("服务器已断开连接", err.Error())
 			break
 		}
 
 		switch msg.Type {
 		case common.MESSAGE:
-			//fmt.Println(msg.Data["msg"])
+			//log.Println(msg.Data["msg"])
 		case common.HASREQ:
 			go handleForwardConn(msg.Data)
 		case common.FATAL:
-			fmt.Println(msg.Data["msg"])
-			os.Exit(1)
+			log.Fatal(msg.Data["msg"])
 		}
 	}
 }
@@ -83,8 +81,7 @@ func main() {
 	conn, err := net.Dial("tcp", appConfig.Server)
 
 	if err != nil {
-		println("连接服务器失败", err.Error())
-		return
+		log.Fatal("连接服务器失败", err.Error())
 	}
 
 	login(conn) //登录验证Token
