@@ -12,7 +12,9 @@ import (
 
 var reqHeaders sync.Map
 var reqClients sync.Map
-var httpClients sync.Map
+var httpServes sync.Map   //HTTP协议服务
+var httpsServes sync.Map  //HHTPS协议服务
+var clientServes sync.Map //客户端服务
 
 func getHTTPHeaders(conn net.Conn) (host string) {
 	addr := conn.RemoteAddr().String()
@@ -49,9 +51,11 @@ func handleHTTPConn(conn net.Conn) {
 	println("New HTTP Conn:", addr)
 
 	host := getHTTPHeaders(conn)
-	if clientConn, ok := httpClients.Load(host); ok {
+	if clientConn, ok := httpServes.Load(host); ok {
+		serveaddr, _ := clientServes.Load(host)
 		reqMsg := common.NewMessage(common.HASREQ, common.JSON{
-			"key": addr,
+			"key":  addr,
+			"addr": serveaddr.(string),
 		})
 
 		reqMsg.Send(clientConn.(net.Conn)) //通知客户端有新请求
@@ -110,9 +114,11 @@ func regServe(conn net.Conn, serves []common.Serve) {
 		switch v.Type {
 		case "http":
 			println("Reg Serve Http: http://" + v.Domain + "->" + v.Addr)
-			httpClients.Store(v.Domain, conn)
+			httpServes.Store(v.Domain, conn)
+			clientServes.Store(v.Domain, v.Addr)
 		case "https":
 			println("Reg Serve Https: https://" + v.Domain + "->" + v.Addr)
+			//httpsClients.Store(v.Domain, conn)
 		case "tunnel":
 			fallthrough
 		default:

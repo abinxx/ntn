@@ -8,9 +8,13 @@ token: ac16alad5a1dk3afysge
 #服务列表
 serves:
     -
-        addr: 127.0.0.1:80
+        addr: 127.0.0.1:81
         type: http
         domain: localhost
+    -
+        addr: 192.168.2.100:80
+        type: http
+        domain: 127.0.0.1
     -
         addr: 127.0.0.1:443
         type: https

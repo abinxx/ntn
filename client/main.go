@@ -29,7 +29,7 @@ func handleForwardConn(data common.JSON) {
 
 	httpMsg.Send(remoteConn)
 
-	localConn, err := net.Dial("tcp", "192.168.2.100:80")
+	localConn, err := net.Dial("tcp", data["addr"])
 
 	if err != nil {
 		println(err.Error())
