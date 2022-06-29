@@ -2,7 +2,7 @@ package common
 
 import (
 	"flag"
-	"fmt"
+	"log"
 
 	"github.com/spf13/viper"
 )
@@ -27,10 +27,10 @@ func GetConfig(appConfig interface{}) {
 	v.SetConfigType("yaml")
 
 	if err := v.ReadInConfig(); err != nil {
-		panic(fmt.Errorf("Read Config: %s\n", err))
+		log.Fatalf("Read Config: %s\n", err)
 	}
 
 	if err := v.Unmarshal(&appConfig); err != nil {
-		panic(fmt.Errorf("Config ERROR: %s\n", err))
+		log.Fatalf("Config ERROR: %s\n", err)
 	}
 }

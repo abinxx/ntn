@@ -4,11 +4,14 @@ import (
 	"log"
 	"net"
 	"ntn/common"
+	"runtime"
+	"time"
 )
 
 type Config struct {
 	Server string
 	Token  string
+	Sleep  uint
 	Serves []common.Serve
 }
 
@@ -18,7 +21,7 @@ func handleForwardConn(data common.JSON) {
 	remoteConn, err := net.Dial("tcp", appConfig.Server)
 
 	if err != nil {
-		remoteConn.Close()
+		log.Println("连接服务器失败:", err.Error())
 		return
 	}
 
@@ -31,7 +34,7 @@ func handleForwardConn(data common.JSON) {
 	localConn, err := net.Dial("tcp", data["addr"])
 
 	if err != nil {
-		log.Println(err.Error())
+		log.Println("连接本地服务失败:", err.Error())
 		common.SendHttpRes(remoteConn, "Local serve connection error.")
 		return
 	}
@@ -39,18 +42,18 @@ func handleForwardConn(data common.JSON) {
 	common.Forward(remoteConn, localConn)
 }
 
-func login(conn net.Conn) {
+func connect(conn net.Conn) {
 	connectMsg := common.Message{
 		Type: common.LOGIN,
 		Data: common.JSON{
 			"token":   appConfig.Token,
 			"version": common.Version,
+			"os":      runtime.GOOS,
 		},
 		Serves: appConfig.Serves,
 	}
 
 	connectMsg.Send(conn)
-
 }
 
 func serve(conn net.Conn) {
@@ -61,7 +64,7 @@ func serve(conn net.Conn) {
 		msg := new(common.Message)
 		err := msg.Read(conn)
 		if err != nil {
-			log.Println("服务器已断开连接", err.Error())
+			log.Println("服务器已断开连接:", err.Error())
 			break
 		}
 
@@ -78,12 +81,18 @@ func serve(conn net.Conn) {
 
 func main() {
 	common.GetConfig(&appConfig)
-	conn, err := net.Dial("tcp", appConfig.Server)
 
-	if err != nil {
-		log.Fatal("连接服务器失败", err.Error())
+	for {
+		conn, err := net.Dial("tcp", appConfig.Server)
+
+		if err != nil {
+			log.Println("连接服务器失败:", err.Error())
+		} else {
+			connect(conn) //登录验证Token
+			serve(conn)   //运行主服务
+		}
+
+		time.Sleep(time.Second * time.Duration(appConfig.Sleep))
+		log.Println("正在尝试重连服务器...")
 	}
-
-	login(conn) //登录验证Token
-	serve(conn) //运行主服务
 }

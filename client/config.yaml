@@ -5,10 +5,13 @@ server: 127.0.0.1:9188
 #登录令牌
 token: ac16alad5a1dk3afysge
 
+#重连间隔时间
+sleep: 5
+
 #服务列表
 serves:
     -
-        addr: 192.168.2.100:80
+        addr: 192.168.110.128:80
         type: http
         domain: localhost
     -

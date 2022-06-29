@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"errors"
-	"io"
 	"log"
 	"net"
 	"ntn/common"
@@ -16,55 +14,6 @@ var reqClients sync.Map
 var httpServes sync.Map   //HTTP协议服务
 var httpsServes sync.Map  //HHTPS协议服务
 var clientServes sync.Map //客户端服务
-
-func getHTTPHeaders(conn net.Conn) (host string) {
-	addr := conn.RemoteAddr().String()
-	var headers string
-	buf := bufio.NewReader(conn)
-
-	for {
-		line, err := buf.ReadString('\n')
-
-		if host == "" {
-			if strings.Contains(line, "Host") || strings.Contains(line, "host") {
-				hostArr := strings.Split(line, ":")
-				if len(hostArr) > 1 { //格式Host: 127.0.0.1:80
-					host = strings.TrimSpace(hostArr[1])
-				}
-			}
-		}
-
-		headers += line //追加请求头
-
-		if line == "\r\n" || err == io.EOF {
-			data, _ := buf.Peek(buf.Buffered())
-			headers += string(data) //追加POST数据
-			break
-		}
-	}
-
-	reqHeaders.Store(addr, headers)
-	return
-}
-
-func handleHTTPConn(conn net.Conn) {
-	addr := conn.RemoteAddr().String()
-	println("New HTTP Conn:", addr)
-
-	host := getHTTPHeaders(conn)
-	if clientConn, ok := httpServes.Load(host); ok {
-		serveaddr, _ := clientServes.Load(host)
-		reqMsg := common.NewMessage(common.HASREQ, common.JSON{
-			"key":  addr,
-			"addr": serveaddr.(string),
-		})
-
-		reqMsg.Send(clientConn.(net.Conn)) //通知客户端有新请求
-		reqClients.Store(addr, conn)       //保存HTTP请求连接
-	} else {
-		common.SendHttpRes(conn, "Client is't online.")
-	}
-}
 
 func handleForwardConn(conn net.Conn, data common.JSON) {
 	key := data["key"]
@@ -164,7 +113,6 @@ func login(conn net.Conn, msg *common.Message) {
 	}
 
 	loginMsg.Send(conn)
-
 	regServe(conn, msg.Serves) //注册用户服务
 }
 

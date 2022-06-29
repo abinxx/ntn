@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-const Version = "0.0.2" //当前版本号
+const Version = "0.1.2" //当前版本号
 
 const (
 	LOGIN   = iota //客户端登录
