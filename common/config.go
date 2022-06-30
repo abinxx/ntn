@@ -9,8 +9,9 @@ import (
 
 type Serve struct {
 	Addr   string `json:"addr"`             //内网地址
-	Type   string `json:"type"`             //类型
+	Type   string `json:"type"`             //类型 -http -https -tcp -udp
 	Domain string `json:"domain,omitempty"` //域名
+	Port   uint   `json:"port,omitempty"`   //服务端口
 }
 
 func GetConfig(appConfig interface{}) {

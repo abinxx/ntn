@@ -25,7 +25,7 @@ func handleForwardConn(data common.JSON) {
 		return
 	}
 
-	httpMsg := common.NewMessage(common.REQCONN, common.JSON{
+	httpMsg := common.NewMessage(common.TUNNEL, common.JSON{
 		"key": data["key"],
 	})
 
@@ -73,6 +73,8 @@ func serve(conn net.Conn) {
 			//log.Println(msg.Data["msg"])
 		case common.HASREQ:
 			go handleForwardConn(msg.Data)
+		case common.ERROR:
+			log.Println(msg.Data["msg"])
 		case common.FATAL:
 			log.Fatal(msg.Data["msg"])
 		}

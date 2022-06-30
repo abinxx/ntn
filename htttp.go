@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"io"
+	"log"
 	"net"
 	"ntn/common"
 	"strings"
@@ -41,19 +42,24 @@ func getHTTPHeaders(conn net.Conn) (host string) {
 
 func handleHTTPConn(conn net.Conn) {
 	addr := conn.RemoteAddr().String()
-	println("New HTTP Conn:", addr)
+	log.Println("New HTTP Conn:", addr)
 
 	host := getHTTPHeaders(conn)
-	if clientConn, ok := httpServes.Load(host); ok {
-		serveaddr, _ := clientServes.Load(host)
-		reqMsg := common.NewMessage(common.HASREQ, common.JSON{
-			"key":  addr,
-			"addr": serveaddr.(string),
-		})
 
-		reqMsg.Send(clientConn.(net.Conn)) //通知客户端有新请求
-		reqClients.Store(addr, conn)       //保存HTTP请求连接
-	} else {
-		common.SendHttpRes(conn, "Client is't online.")
+	for _, v := range clients {
+		serve := v.GetHTTPServe(host)
+
+		if serve != nil {
+			reqMsg := common.NewMessage(common.HASREQ, common.JSON{
+				"key":  addr,
+				"addr": serve.Addr,
+			})
+
+			reqMsg.Send(v.Conn)          //通知客户端有新请求
+			reqClients.Store(addr, conn) //保存HTTP请求连接
+			return
+		}
 	}
+
+	common.SendHttpRes(conn, "Client is't online.")
 }

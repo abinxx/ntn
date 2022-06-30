@@ -20,5 +20,5 @@ serves:
         domain: https.nsp.bincs.cn
     -
         addr: 127.0.0.1:22
-        type: tunnel
-        domain: ssh.nsp.bincs.cn
+        type: tcp
+        port: 999

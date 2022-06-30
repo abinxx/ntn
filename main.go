@@ -11,9 +11,6 @@ import (
 
 var reqHeaders sync.Map
 var reqClients sync.Map
-var httpServes sync.Map   //HTTP协议服务
-var httpsServes sync.Map  //HHTPS协议服务
-var clientServes sync.Map //客户端服务
 
 func handleForwardConn(conn net.Conn, data common.JSON) {
 	key := data["key"]
@@ -28,24 +25,24 @@ func handleForwardConn(conn net.Conn, data common.JSON) {
 }
 
 func handleClientConn(conn net.Conn) {
+	defer conn.Close()
 	clientMsg := new(common.Message)
-	err := clientMsg.Read(conn)
 
-	if err != nil {
-		defer conn.Close()
-		errMsg := common.NewMessage(common.ERROR, common.JSON{
-			"msg": err.Error(),
-		})
+	for {
+		err := clientMsg.Read(conn)
+		if err != nil {
+			log.Println("Client Disconnect:", err.Error())
+			CloseClient(conn)
+			return
+		}
 
-		errMsg.Send(conn)
-		return
-	}
-
-	switch clientMsg.Type {
-	case common.LOGIN:
-		login(conn, clientMsg)
-	case common.REQCONN:
-		handleForwardConn(conn, clientMsg.Data)
+		switch clientMsg.Type {
+		case common.LOGIN:
+			login(conn, clientMsg)
+		case common.TUNNEL:
+			handleForwardConn(conn, clientMsg.Data)
+			break //隧道结束就退出
+		}
 	}
 }
 
@@ -58,23 +55,38 @@ func getDomain(token string) (domain string, err error) {
 	return "localhost", nil
 }
 
-//注册用户服务逻辑
-func regServe(conn net.Conn, serves []common.Serve) {
+//注册服务逻辑
+func regServe(conn net.Conn, serves []common.Serve) *Client {
+	client := NewClient(conn)
+
 	for _, v := range serves {
+		resStatus := false
 		switch v.Type {
 		case "http":
-			println("Reg Serve Http: http://" + v.Domain + "->" + v.Addr)
-			httpServes.Store(v.Domain, conn)
-			clientServes.Store(v.Domain, v.Addr)
+			resStatus = true
+			log.Println("Reg Serve Http: http://" + v.Domain + "->" + v.Addr)
 		case "https":
-			println("Reg Serve Https: https://" + v.Domain + "->" + v.Addr)
-			//httpsClients.Store(v.Domain, conn)
-		case "tunnel":
-			fallthrough
+			log.Println("Reg Serve Https: https://" + v.Domain + "->" + v.Addr)
+		case "tcp":
+			err := regTcpServe(client, v.Port)
+			if err != nil {
+				log.Printf("Reg Serve TCP: %s", err.Error())
+				break
+			}
+			resStatus = true
+			log.Printf("Reg Serve TCP: %v->%v", v.Port, v.Addr)
+		case "udp":
+			log.Printf("Reg Serve UDP: %v->%v", v.Port, v.Addr)
 		default:
-			println("Reg Serve Tunnel: tcp://" + v.Domain + "->" + v.Addr)
+			log.Println("Reg Serve Error")
+		}
+
+		if resStatus {
+			client.Serves = append(client.Serves, v)
 		}
 	}
+
+	return client
 }
 
 func isOldClient(ver string) bool {
@@ -113,15 +125,24 @@ func login(conn net.Conn, msg *common.Message) {
 	}
 
 	loginMsg.Send(conn)
-	regServe(conn, msg.Serves) //注册用户服务
+	if client, ok := clients[token]; ok {
+		clientMsg := common.NewMessage(common.FATAL, common.JSON{
+			"msg": "账号在新设备上登录",
+		})
+
+		clientMsg.Send(client.Conn)
+		client.Close()
+		delete(clients, token)
+	}
+	clients[token] = regServe(conn, msg.Serves) //注册用户服务
+	log.Println("Now Online Clients:", len(clients))
 }
 
-func Serve(id, addr string, f func(c net.Conn)) {
+func Serve(id, addr string, f func(net.Conn)) {
 	ln, err := net.Listen("tcp", addr)
 
 	if err != nil {
 		log.Fatal("服务启动失败", err)
-		return
 	}
 
 	log.Println(id + "服务运行中")
