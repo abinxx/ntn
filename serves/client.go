@@ -1,4 +1,4 @@
-package main
+package serves
 
 import (
 	"log"
@@ -40,12 +40,12 @@ func (c *Client) GetServeByPort(t string, port uint) *common.Serve {
 	return nil
 }
 
-func (c *Client) GetHTTPServe(domain string) *common.Serve {
-	return c.GetServeByDomain("http", domain)
-}
+func (c *Client) GetServe(domain string, isHttps bool) *common.Serve {
+	if isHttps {
+		return c.GetServeByDomain(common.HTTPS, domain)
+	}
 
-func (c *Client) GetHTTPSServe(domain string) *common.Serve {
-	return c.GetServeByDomain("https", domain)
+	return c.GetServeByDomain(common.HTTP, domain)
 }
 
 func (c *Client) GetTCPServe(port uint) *common.Serve {
@@ -56,8 +56,26 @@ func (c *Client) GetUDPServe(port uint) *common.Serve {
 	return c.GetServeByPort("udp", port)
 }
 
+func CloseAllListen(key, value interface{}) bool {
+	ln, _ := value.(net.Listener)
+	ln.Close()
+	log.Println("Close Serve by Port:", key)
+	return false
+}
+
 func (c *Client) Close() {
 	c.Conn.Close()
+	c.TCP.Range(CloseAllListen)
+	c.UDP.Range(CloseAllListen)
+}
+
+func GetClientByConn(conn net.Conn) *Client {
+	for _, v := range clients {
+		if conn == v.Conn {
+			return v
+		}
+	}
+	return nil
 }
 
 func CloseClient(conn net.Conn) {

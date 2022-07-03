@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"log"
 	"net"
 	"ntn/common"
@@ -26,12 +27,18 @@ func handleForwardConn(data common.JSON) {
 	}
 
 	httpMsg := common.NewMessage(common.TUNNEL, common.JSON{
-		"key": data["key"],
+		"key":  data["key"],
+		"type": data["type"],
 	})
 
 	httpMsg.Send(remoteConn)
 
-	localConn, err := net.Dial("tcp", data["addr"])
+	var localConn net.Conn
+	if data["type"] == common.HTTPS {
+		localConn, err = tls.Dial("tcp", data["addr"], &tls.Config{InsecureSkipVerify: true})
+	} else {
+		localConn, err = net.Dial("tcp", data["addr"])
+	}
 
 	if err != nil {
 		log.Println("连接本地服务失败:", err.Error())
@@ -42,23 +49,52 @@ func handleForwardConn(data common.JSON) {
 	common.Forward(remoteConn, localConn)
 }
 
+//登录验证
 func connect(conn net.Conn) {
-	connectMsg := common.Message{
-		Type: common.LOGIN,
-		Data: common.JSON{
-			"token":   appConfig.Token,
-			"version": common.Version,
-			"os":      runtime.GOOS,
-		},
-		Serves: appConfig.Serves,
-	}
+	connectMsg := common.NewMessage(common.LOGIN, common.JSON{
+		"token":   appConfig.Token,
+		"version": common.Version,
+		"os":      runtime.GOOS,
+	})
 
 	connectMsg.Send(conn)
 }
 
+//登录结果
+func loginRes(conn net.Conn, data common.JSON) {
+	if data["status"] == common.OK {
+		regRemoteServe(conn, appConfig.Serves)
+	} else {
+		log.Fatal(data["msg"])
+	}
+}
+
+//向服务器注册服务
+func regRemoteServe(conn net.Conn, serves []common.Serve) {
+	regMsg := common.Message{
+		Type:   common.REGSERVE,
+		Serves: serves,
+	}
+
+	regMsg.Send(conn)
+}
+
+//注册服务结果
+func regRemoteServeRes(msg *common.Message) {
+	data := msg.Data
+
+	for _, v := range msg.Serves {
+		if v.Type == common.HTTP || v.Type == common.HTTPS {
+			log.Printf("Reg Serve %v: %s://%s->%s\n", data["status"], v.Type, v.Domain, v.Addr)
+		} else {
+			log.Printf("Reg Serve %v: %s://%v->%s\n", data["status"], v.Type, v.Port, v.Addr)
+		}
+	}
+}
+
 func serve(conn net.Conn) {
-	defer conn.Close()                     //关闭连接
-	conn.(*net.TCPConn).SetKeepAlive(true) //保持连接
+	defer conn.Close()
+	conn.(*net.TCPConn).SetKeepAlive(true) //开启保持长连接
 
 	for {
 		msg := new(common.Message)
@@ -69,6 +105,10 @@ func serve(conn net.Conn) {
 		}
 
 		switch msg.Type {
+		case common.LOGINRES:
+			loginRes(conn, msg.Data)
+		case common.REGRES:
+			go regRemoteServeRes(msg)
 		case common.MESSAGE:
 			//log.Println(msg.Data["msg"])
 		case common.HASREQ:

@@ -1,4 +1,4 @@
-package main
+package serves
 
 import (
 	"bufio"
@@ -10,7 +10,7 @@ import (
 )
 
 //解析HTTP头部Host
-func getHTTPHeaders(conn net.Conn) (host string) {
+func GetHostWithHeaders(conn net.Conn) (host string) {
 	addr := conn.RemoteAddr().String()
 	var headers string
 	buf := bufio.NewReader(conn)
@@ -40,18 +40,19 @@ func getHTTPHeaders(conn net.Conn) (host string) {
 	return
 }
 
-func handleHTTPConn(conn net.Conn) {
+func handleHttpAndHttps(conn net.Conn, isHttps bool) {
 	addr := conn.RemoteAddr().String()
-	log.Println("New HTTP Conn:", addr)
+	log.Println("New Conn:", addr)
 
-	host := getHTTPHeaders(conn)
+	host := GetHostWithHeaders(conn)
 
 	for _, v := range clients {
-		serve := v.GetHTTPServe(host)
+		serve := v.GetServe(host, isHttps)
 
 		if serve != nil {
 			reqMsg := common.NewMessage(common.HASREQ, common.JSON{
 				"key":  addr,
+				"type": serve.Type,
 				"addr": serve.Addr,
 			})
 
@@ -62,4 +63,8 @@ func handleHTTPConn(conn net.Conn) {
 	}
 
 	common.SendHttpRes(conn, "Client is't online.")
+}
+
+func handleHTTPConn(conn net.Conn) {
+	handleHttpAndHttps(conn, false)
 }

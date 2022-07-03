@@ -32,6 +32,6 @@ func GetConfig(appConfig interface{}) {
 	}
 
 	if err := v.Unmarshal(&appConfig); err != nil {
-		log.Fatalf("Config ERROR: %s\n", err)
+		log.Fatalf("Parse Config ERROR: %s\n", err)
 	}
 }

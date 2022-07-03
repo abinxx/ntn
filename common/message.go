@@ -11,7 +11,7 @@ type JSON map[string]string
 
 type Message struct {
 	Type   uint    `json:"type"`
-	Data   JSON    `json:"data"`
+	Data   JSON    `json:"data,omitempty"`
 	Serves []Serve `json:"serves,omitempty"`
 }
 
