@@ -1,6 +1,6 @@
 #服务器地址
-server: 120.79.182.242:9188
-#server: 127.0.0.1:9188
+#server: 120.79.182.242:9188
+server: 127.0.0.1:9188
 
 #登录令牌
 token: ac16alad5a1dk3afysgeaA

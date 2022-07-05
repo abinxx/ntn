@@ -5,5 +5,5 @@ port: 9188
 # ca: /etc/ntn/ca.crt
 # key: /etc/ntn/key.pem
 
-ca: C:\Users\LiuBin\Desktop\nsp\conf\ca.crt
-key: C:\Users\LiuBin\Desktop\nsp\conf\key.pem
+ca: C:\Users\LiuBin\Desktop\SSL\ntn.bincs.cn\ca.crt
+key: C:\Users\LiuBin\Desktop\SSL\ntn.bincs.cn\key.pem

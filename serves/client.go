@@ -83,7 +83,7 @@ func CloseClient(conn net.Conn) {
 		if v.Conn == conn {
 			v.Close()
 			delete(clients, k)
-			log.Println("Now Clients:", len(clients))
+			log.Println("Now Online Clients:", len(clients))
 			return
 		}
 	}
