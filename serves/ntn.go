@@ -24,6 +24,7 @@ func handleForwardConn(conn net.Conn, data common.JSON) {
 
 func handleClientConn(conn net.Conn) {
 	defer conn.Close()
+	log.Printf("New Client Conn: %s\n", conn.RemoteAddr().String())
 	clientMsg := new(common.Message)
 
 	for {

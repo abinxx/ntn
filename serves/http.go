@@ -42,8 +42,6 @@ func GetHostWithHeaders(conn net.Conn) (host string) {
 
 func handleHttpAndHttps(conn net.Conn, isHttps bool) {
 	addr := conn.RemoteAddr().String()
-	log.Println("New Conn:", addr)
-
 	host := GetHostWithHeaders(conn)
 
 	for _, v := range clients {
@@ -66,5 +64,6 @@ func handleHttpAndHttps(conn net.Conn, isHttps bool) {
 }
 
 func handleHTTPConn(conn net.Conn) {
+	log.Println("New Http Conn:", conn.RemoteAddr().String())
 	handleHttpAndHttps(conn, false)
 }

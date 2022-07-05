@@ -18,6 +18,7 @@ func LoadTLsConfig(ca, key string) {
 }
 
 func handleHTTPSConn(conn net.Conn) {
+	log.Println("New Https Conn:", conn.RemoteAddr().String())
 	tlsConn := tls.Server(conn, config) //转成TLS连接
 	handleHttpAndHttps(tlsConn, true)
 }

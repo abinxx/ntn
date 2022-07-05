@@ -4,6 +4,7 @@ port: 9188
 # 证书文件路径
 # ca: /etc/ntn/ca.crt
 # key: /etc/ntn/key.pem
+# log: /etc/ntn/ntn.log
 
 ca: C:\Users\LiuBin\Desktop\SSL\ntn.bincs.cn\ca.crt
 key: C:\Users\LiuBin\Desktop\SSL\ntn.bincs.cn\key.pem
