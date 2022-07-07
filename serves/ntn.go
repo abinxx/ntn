@@ -10,16 +10,18 @@ import (
 
 func handleForwardConn(conn net.Conn, data common.JSON) {
 	key := data["key"]
-	reqConn, _ := reqClients.Load(key)
+	defer conn.Close()
+	defer reqClients.Delete(key)             //完成删除客户端连接
 
 	if data["type"] == common.HTTP || data["type"] == common.HTTPS {
 		headers, _ := reqHeaders.Load(key)
 		conn.Write([]byte(headers.(string))) //给客户端发送请求头
 		reqHeaders.Delete(key)               //完成删除客户端请求头
 	}
-
-	common.Forward(conn, reqConn.(net.Conn)) //转发数据
-	reqClients.Delete(key)                   //完成删除客户端连接
+	
+	if reqConn, ok := reqClients.Load(key);ok {
+		common.Forward(conn, reqConn.(net.Conn)) //转发数据
+	}
 }
 
 func handleClientConn(conn net.Conn) {

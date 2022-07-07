@@ -14,7 +14,7 @@ func Serve(id, addr string, f func(net.Conn)) {
 	ln, err := net.Listen("tcp", addr)
 
 	if err != nil {
-		log.Fatal("Serve Error:", err)
+		log.Fatal("Run Serve Error:", err)
 	}
 
 	log.Println(id + " Serve Runing...")

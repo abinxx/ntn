@@ -33,6 +33,9 @@ func GetHostWithHeaders(conn net.Conn) (host string) {
 			data, _ := buf.Peek(buf.Buffered())
 			headers += string(data) //追加POST数据
 			break
+		}else if err != nil {
+			log.Println("Read Headers Error:", err)
+			break			//读取失败
 		}
 	}
 
@@ -60,6 +63,7 @@ func handleHttpAndHttps(conn net.Conn, isHttps bool) {
 		}
 	}
 
+	reqHeaders.Delete(addr)
 	common.SendHttpRes(conn, "Client is't online.")
 }
 

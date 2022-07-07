@@ -32,7 +32,7 @@ func (c *Client) GetServeByDomain(t, domain string) *common.Serve {
 
 func (c *Client) GetServeByPort(t string, port uint) *common.Serve {
 	for _, v := range c.Serves {
-		if v.Type == "tcp" && v.Port == port {
+		if v.Type == t && v.Port == port {
 			return &v
 		}
 	}
