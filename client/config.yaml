@@ -1,6 +1,6 @@
 #服务器地址
-#server: 120.79.182.242:9188
-server: 127.0.0.1:9188
+server: 120.79.182.242:9188
+#server: 127.0.0.1:9188
 
 #登录令牌
 token: ac16alad5a1dk3afysgeaA
@@ -13,11 +13,11 @@ serves:
     -
         addr: 192.168.2.100:80
         type: http
-        domain: http.nsp.bincs.cn
+        domain: http.ntn.bincs.cn
     -
         addr: 192.168.2.100:443
         type: https
-        domain: https.nsp.bincs.cn
+        domain: https.ntn.bincs.cn
     -
         addr: 192.168.2.100:22
         type: tcp

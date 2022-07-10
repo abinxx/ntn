@@ -9,10 +9,8 @@ import (
 	"strings"
 )
 
-//解析HTTP头部Host
-func GetHostWithHeaders(conn net.Conn) (host string) {
-	addr := conn.RemoteAddr().String()
-	var headers string
+//获取HTTP头部和Host
+func GetHeadersAndHost(conn net.Conn) (headers, host string) {
 	buf := bufio.NewReader(conn)
 
 	for {
@@ -33,19 +31,18 @@ func GetHostWithHeaders(conn net.Conn) (host string) {
 			data, _ := buf.Peek(buf.Buffered())
 			headers += string(data) //追加POST数据
 			break
-		}else if err != nil {
+		} else if err != nil {
 			log.Println("Read Headers Error:", err)
-			break			//读取失败
+			break //读取失败
 		}
 	}
 
-	reqHeaders.Store(addr, headers)
 	return
 }
 
 func handleHttpAndHttps(conn net.Conn, isHttps bool) {
 	addr := conn.RemoteAddr().String()
-	host := GetHostWithHeaders(conn)
+	headers, host := GetHeadersAndHost(conn)
 
 	for _, v := range clients {
 		serve := v.GetServe(host, isHttps)
@@ -57,13 +54,13 @@ func handleHttpAndHttps(conn net.Conn, isHttps bool) {
 				"addr": serve.Addr,
 			})
 
-			reqMsg.Send(v.Conn)          //通知客户端有新请求
-			reqClients.Store(addr, conn) //保存HTTP请求连接
+			reqHeaders.Store(addr, headers) //保存HTTP请求头
+			reqClients.Store(addr, conn)    //保存HTTP请求连接
+			reqMsg.Send(v.Conn)             //通知客户端有新请求
 			return
 		}
 	}
 
-	reqHeaders.Delete(addr)
 	common.SendHttpRes(conn, "Client is't online.")
 }
 

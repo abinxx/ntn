@@ -8,7 +8,7 @@ import (
 	"net"
 )
 
-const ByteHeader = 0x66 //消息头部验证标识
+const NTNMsgByteHeader = 0x66 //消息头部验证标识
 
 type JSON map[string]string
 
@@ -26,7 +26,7 @@ func (msg *Message) Send(conn net.Conn) (err error) {
 	log.Printf("SEND Msg Len: %d Byte\n", dataLen)
 
 	buf := make([]byte, 3)
-	buf[0] = ByteHeader
+	buf[0] = NTNMsgByteHeader
 	binary.BigEndian.PutUint16(buf[1:3], dataLen) //将长度转大端字节
 
 	if err == nil {
@@ -42,10 +42,9 @@ func (msg *Message) Read(conn net.Conn) (err error) {
 
 	if err != nil {
 		return
-	} else if n < 3 || buf[0] != ByteHeader { //未知的客户端
+	} else if n < 3 || buf[0] != NTNMsgByteHeader { //未知的客户端
 		return errors.New("Error Client Addr: " + conn.RemoteAddr().String())
 	}
-
 	dataLen := uint16(binary.BigEndian.Uint16(buf[1:n])) //解析消息长度
 	log.Printf("READ Msg Len: %d Byte\n", dataLen)
 
