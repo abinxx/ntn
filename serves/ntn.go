@@ -11,15 +11,17 @@ import (
 func handleForwardConn(conn net.Conn, data common.JSON) {
 	key := data["key"]
 	defer conn.Close()
-	defer reqClients.Delete(key)             //完成删除客户端连接
+	defer reqClients.Delete(key) //完成删除连接
 
 	if data["type"] == common.HTTP || data["type"] == common.HTTPS {
 		headers, _ := reqHeaders.Load(key)
-		conn.Write([]byte(headers.(string))) //给客户端发送请求头
-		reqHeaders.Delete(key)               //完成删除客户端请求头
+		conn.Write([]byte(headers.(string))) //发送请求头
+		reqHeaders.Delete(key)               //完成删除保存的请求头
+		up := (int64)(len(headers.(string)))
+		common.OnByte(up, 0) //请求头数据上传长度
 	}
-	
-	if reqConn, ok := reqClients.Load(key);ok {
+
+	if reqConn, ok := reqClients.Load(key); ok {
 		common.Forward(conn, reqConn.(net.Conn)) //转发数据
 	}
 }
@@ -52,44 +54,41 @@ func handleClientConn(conn net.Conn) {
 //注册服务逻辑
 func regServe(conn net.Conn, serves []common.Serve) {
 	client := GetClientByConn(conn) //获取保存的客户端
-	var errServes []common.Serve
 
 	if client == nil {
 		conn.Close() //客户端不存在 关闭注册连接
 		return
 	}
 
+	var err error
+	var errServes []common.Serve
+OuterLoop:
 	for _, v := range serves {
 		switch v.Type {
 		case common.HTTP:
 			fallthrough
 		case common.HTTPS:
-			err := regHttpAndHttpsServe(v.Domain, v.Type == common.HTTPS)
-			if err != nil {
-				log.Printf("Reg Serve ERROR: %v\n", err)
-				errServes = append(errServes, v)
-				break
-			}
-			client.Serves = append(client.Serves, v)
+			err = regHttpAndHttpsServe(v.Domain, v.Type == common.HTTPS)
 		case common.TCP:
-			err := regTcpServe(client, v.Port)
-			if err != nil {
-				log.Printf("Reg TCP Serve: %s", err.Error())
-				errServes = append(errServes, v)
-				break
-			}
-			client.Serves = append(client.Serves, v)
+			err = regTcpServe(client, v.Port)
 		case common.UDP:
 			//log.Printf("Reg Serve UDP: %v->%v", v.Port, v.Addr)
+			break OuterLoop
 		default:
-			log.Println("Reg Serve Error")
+			log.Println("Serve Type Error")
+			break OuterLoop
+		}
+
+		if err != nil {
+			log.Printf("Reg %s Serve: %s", v.Type, err.Error())
+			errServes = append(errServes, v)
+		} else {
+			client.Serves = append(client.Serves, v)
 		}
 	}
 
 	utils.SendRegServeRes(conn, client.Serves, common.OK)
-	if len(errServes) > 0 {
-		utils.SendRegServeRes(conn, errServes, common.NO)
-	}
+	utils.SendRegServeRes(conn, errServes, common.NO)
 }
 
 func isOldClient(ver string) bool {
@@ -116,9 +115,9 @@ func login(conn net.Conn, msg *common.Message) {
 	var err error
 
 	if err != nil {
-		utils.SendStatusMsg(conn, common.LOGINRES, err.Error(), common.NO)
+		utils.SendStatusMsg(conn, common.LOGIN, err.Error(), common.NO)
 	} else {
-		utils.SendStatusMsg(conn, common.LOGINRES, "身份验证成功", common.OK)
+		utils.SendStatusMsg(conn, common.LOGIN, "身份验证成功", common.OK)
 	}
 
 	if client, ok := clients[token]; ok {

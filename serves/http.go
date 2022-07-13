@@ -19,9 +19,10 @@ func GetHeadersAndHost(conn net.Conn) (headers, host string) {
 		if host == "" {
 			if strings.Contains(line, "Host") || strings.Contains(line, "host") {
 				hostArr := strings.Split(line, ":")
-				if len(hostArr) > 1 { //格式Host: 127.0.0.1:80
-					host = strings.TrimSpace(hostArr[1])
+				if len(hostArr) < 1 {
+					return //解析Host失败 格式->Host:ntn.bincs.cn:80
 				}
+				host = strings.TrimSpace(hostArr[1])
 			}
 		}
 
@@ -40,7 +41,8 @@ func GetHeadersAndHost(conn net.Conn) (headers, host string) {
 	return
 }
 
-func handleHttpAndHttps(conn net.Conn, isHttps bool) {
+func handleHttp(conn net.Conn, isHttps bool) {
+	//log.Println("New Http Conn:", conn.RemoteAddr().String())
 	addr := conn.RemoteAddr().String()
 	headers, host := GetHeadersAndHost(conn)
 
@@ -65,6 +67,5 @@ func handleHttpAndHttps(conn net.Conn, isHttps bool) {
 }
 
 func handleHTTPConn(conn net.Conn) {
-	log.Println("New Http Conn:", conn.RemoteAddr().String())
-	handleHttpAndHttps(conn, false)
+	handleHttp(conn, false)
 }

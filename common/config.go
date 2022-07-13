@@ -21,7 +21,7 @@ func GetConfig(appConfig interface{}) {
 	flag.Parse()
 
 	if config == "" {
-		config = "config.yaml" //默认配置文件路径
+		config = "./config.yaml" //默认配置文件路径
 	}
 	v := viper.New()
 	v.SetConfigFile(config)

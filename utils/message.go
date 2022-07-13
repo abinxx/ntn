@@ -7,6 +7,10 @@ import (
 )
 
 func SendRegServeRes(conn net.Conn, serves []common.Serve, status string) {
+	if len(serves) <= 0 {
+		return //没有服务 不需要发送结果
+	}
+
 	resMsg := common.Message{
 		Type: common.REGRES,
 		Data: common.JSON{

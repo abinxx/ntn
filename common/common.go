@@ -18,7 +18,6 @@ const (
 
 const (
 	LOGIN    = iota + 1 //客户端登录
-	LOGINRES            //客户端登录结果
 	REGSERVE            //注册服务
 	REGRES              //注册服务结果
 	MESSAGE             //消息通知
@@ -28,9 +27,10 @@ const (
 	FATAL               //致命错误 退出程序
 )
 
-func Forward(dst net.Conn, src net.Conn) {
+func Forward(dst, src net.Conn) {
 	defer dst.Close() //拷贝完立即释放连接
 	defer src.Close() //让上传协程退出
+	down := make(chan int64, 1)
 
 	go func() {
 		defer src.Close() //拷贝完立即释放连接
@@ -40,12 +40,16 @@ func Forward(dst net.Conn, src net.Conn) {
 		if err != nil {
 			log.Println("Upload Error:", err.Error())
 		}
-		log.Printf("Upload: %d Byte\n", n)
+		down <- n //通知上传流量
 	}()
 
-	n, err := io.Copy(src, dst)
+	up, err := io.Copy(src, dst)
 	if err != nil {
 		log.Println("Dodwload Error:", err.Error())
 	}
-	log.Printf("Dodwload: %d Byte\n", n)
+	OnByte(<-down, up)
+}
+
+func OnByte(up, down int64) {
+	log.Printf("Upload: %d Byte\tDodwload: %d Byte\n", up, down)
 }

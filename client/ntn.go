@@ -39,7 +39,7 @@ func handleForwardConn(data common.JSON) {
 		return
 	}
 
-	common.Forward(remoteConn, localConn)
+	common.Forward(localConn, remoteConn)
 }
 
 //登录验证
