@@ -10,19 +10,19 @@ import (
 )
 
 //获取HTTP头部和Host
-func GetHeadersAndHost(conn net.Conn) (headers, host string) {
+func GetHeadersAndDomain(conn net.Conn) (headers, domain string) {
 	buf := bufio.NewReader(conn)
 
 	for {
 		line, err := buf.ReadString('\n')
 
-		if host == "" {
+		if domain == "" {
 			if strings.Contains(line, "Host") || strings.Contains(line, "host") {
 				hostArr := strings.Split(line, ":")
-				if len(hostArr) < 1 {
+				if len(hostArr) < 2 {
 					return //解析Host失败 格式->Host:ntn.bincs.cn:80
 				}
-				host = strings.TrimSpace(hostArr[1])
+				domain = strings.TrimSpace(hostArr[1])
 			}
 		}
 
@@ -44,10 +44,10 @@ func GetHeadersAndHost(conn net.Conn) (headers, host string) {
 func handleHttp(conn net.Conn, isHttps bool) {
 	//log.Println("New Http Conn:", conn.RemoteAddr().String())
 	addr := conn.RemoteAddr().String()
-	headers, host := GetHeadersAndHost(conn)
+	headers, domain := GetHeadersAndDomain(conn)
 
 	for _, v := range clients {
-		serve := v.GetServe(host, isHttps)
+		serve := v.GetServe(domain, isHttps)
 
 		if serve != nil {
 			reqMsg := common.NewMessage(common.HASREQ, common.JSON{

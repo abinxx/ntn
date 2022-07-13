@@ -13,7 +13,7 @@ const (
 	UDP     = "udp"
 	OK      = "OK"    //成功
 	NO      = "ERROR" //失败
-	Version = "0.2.1" //当前版本号
+	Version = "0.2.2" //当前版本号
 )
 
 const (
